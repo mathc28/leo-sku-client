@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application SKU - Génération</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #333;
+        }
+        select, textarea, input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button.copy {
+            background-color: #28a745;
+        }
+        .button.copy:hover {
+            background-color: #218838;
+        }
+        .button.delete {
+            background-color: #dc3545;
+        }
+        .button.delete:hover {
+            background-color: #c82333;
+        }
+        .sku-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .sku-quantity {
+            width: 60px;
+            margin-right: 10px;
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const modelTranslations = {
+                'BEL': 'Béluga',
+                'DUG': 'Dugong'
+            };
+
+            const partTranslations = {
+                'SIE': 'Siège',
+                'DOS': 'Dossier',
+                'GAU': 'Accoudoir Gauche',
+                'DRO': 'Accoudoir Droit',
+                'CEN': 'Centre'
+            };
+
+            const colorTranslations = {
+                'ROU': 'Rouge',
+                'NOI': 'Noir',
+                'BLA': 'Blanc',
+                'BLE': 'Bleu',
+                'VER': 'Vert',
+                'JAU': 'Jaune',
+                'MEN': 'Menthe',
+                'PEC': 'Pêche'
+            };
+
+            function generateSKU() {
+                const produit = document.getElementById("produit").value;
+                const assise = document.getElementById("assise").value;
+                const dossier = document.getElementById("dossier").value;
+                const piedGauche = document.getElementById("piedGauche").value;
+                const piedDroit = document.getElementById("piedDroit").value;
+
+                const skuParts = [
+                    { code: produit, part: "SIE", value: assise },
+                    { code: produit, part: "DOS", value: dossier },
+                    { code: produit, part: "GAU", value: piedGauche },
+                    { code: produit, part: "DRO", value: piedDroit }
+                ];
+
+                const finalSKU = skuParts.map(part => `${part.code}${part.part}${part.value}`).join("");
+
+                const skuList = document.getElementById("skuList");
+                const listItem = document.createElement("div");
+                listItem.classList.add("sku-item");
+
+                const skuText = document.createElement("span");
+                skuText.textContent = finalSKU;
+                listItem.appendChild(skuText);
+
+                const quantityInput = document.createElement("input");
+                quantityInput.type = "number";
+                quantityInput.min = "1";
+                quantityInput.value = "1";
+                quantityInput.classList.add("sku-quantity");
+                listItem.appendChild(quantityInput);
+
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "Supprimer";
+                deleteButton.classList.add("button", "delete");
+                deleteButton.addEventListener("click", () => {
+                    skuList.removeChild(listItem);
+                });
+                listItem.appendChild(deleteButton);
+
+                skuList.appendChild(listItem);
+
+                document.getElementById("copySKUButton").disabled = false;
+                document.getElementById("requestQuoteButton").disabled = false;
+            }
+
+            function copySKU() {
+                const skuListItems = document.querySelectorAll("#skuList .sku-item");
+                let skuText = Array.from(skuListItems).map(item => {
+                    const sku = item.querySelector("span").textContent;
+                    const quantity = parseInt(item.querySelector(".sku-quantity").value, 10);
+                    return Array(quantity).fill(sku).join("\n");
+                }).join("\n");
+                navigator.clipboard.writeText(skuText).then(() => {
+                    alert("SKU(s) copié(s) :\n" + skuText);
+                }).catch(err => {
+                    console.error("Échec de la copie du SKU :", err);
+                });
+            }
+
+            function requestQuote() {
+                const skuListItems = document.querySelectorAll("#skuList .sku-item");
+                let skuDetails = Array.from(skuListItems).map(item => {
+                    const sku = item.querySelector("span").textContent;
+                    const quantity = item.querySelector(".sku-quantity").value;
+                    return `${sku} - Quantité: ${quantity}`;
+                }).join("\n");
+
+                const subject = encodeURIComponent("Demande de devis pour SKUs");
+                const body = encodeURIComponent(`Bonjour Léo,
+
+J'espère que vous allez bien. Je vous contacte pour vous demander un devis pour les produits suivants :
+
+${skuDetails}
+
+Je vous remercie par avance pour votre retour. N'hésitez pas à me contacter si vous avez besoin de plus d'informations.
+
+Bien cordialement,
+[Votre Nom]`);
+
+                window.location.href = `mailto:leo.gaudenz@polimair.fr?subject=${subject}&body=${body}`;
+            }
+
+            document.getElementById("generateSKUButton").addEventListener("click", generateSKU);
+            document.getElementById("copySKUButton").addEventListener("click", copySKU);
+            document.getElementById("requestQuoteButton").addEventListener("click", requestQuote);
+
+            // Désactiver le bouton de copie par défaut
+            document.getElementById("copySKUButton").disabled = true;
+            document.getElementById("requestQuoteButton").disabled = true;
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Application SKU - Génération</h1>
+        <h2>Générateur SKU</h2>
+        <label for="produit">Produit:</label>
+        <select id="produit">
+            <option value="BEL">Beluga</option>
+            <option value="DUG">Dugong</option>
+        </select>
+
+        <label for="assise">Assise (Couleur):</label>
+        <select id="assise">
+            <option value="ROU">Rouge</option>
+            <option value="NOI">Noir</option>
+            <option value="BLA">Blanc</option>
+            <option value="BLE">Bleu</option>
+            <option value="VER">Vert</option>
+            <option value="JAU">Jaune</option>
+            <option value="MEN">Menthe</option>
+            <option value="PEC">Pêche</option>
+        </select>
+
+        <label for="dossier">Dossier (Couleur):</label>
+        <select id="dossier">
+            <option value="ROU">Rouge</option>
+            <option value="NOI">Noir</option>
+            <option value="BLA">Blanc</option>
+            <option value="BLE">Bleu</option>
+            <option value="VER">Vert</option>
+            <option value="JAU">Jaune</option>
+            <option value="MEN">Menthe</option>
+            <option value="PEC">Pêche</option>
+        </select>
+
+        <label for="piedGauche">Pied Gauche (Couleur):</label>
+        <select id="piedGauche">
+            <option value="ROU">Rouge</option>
+            <option value="NOI">Noir</option>
+            <option value="BLA">Blanc</option>
+            <option value="BLE">Bleu</option>
+            <option value="VER">Vert</option>
+            <option value="JAU">Jaune</option>
+            <option value="MEN">Menthe</option>
+            <option value="PEC">Pêche</option>
+        </select>
+
+        <label for="piedDroit">Pied Droit (Couleur):</label>
+        <select id="piedDroit">
+            <option value="ROU">Rouge</option>
+            <option value="NOI">Noir</option>
+            <option value="BLA">Blanc</option>
+            <option value="BLEU">Bleu</option>
+            <option value="VER">Vert</option>
+            <option value="JAU">Jaune</option>
+            <option value="MEN">Menthe</option>
+            <option value="PEC">Pêche</option>
+        </select>
+
+        <button type="button" class="button" id="generateSKUButton">Générer le SKU</button>
+        <div id="skuList"></div>
+        <button type="button" class="button copy" id="copySKUButton">Copier tous les SKUs</button>
+        <button type="button" class="button" id="requestQuoteButton">Demander un Devis par mail</button>
+    </div>
+</body>
+</html>
